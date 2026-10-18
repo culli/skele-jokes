@@ -1,0 +1,110 @@
+TWO-SKELETON BLUETOOTH SETUP
+
+Upload motion_mp3/motion_mp3.ino to skeleton 1 (button + motion sensor).
+Upload button_mp3/button_mp3.ino to skeleton 2 (button, no motion sensor).
+Keep SkeletonBLE.h, SkeletonProtocol.h, SkeletonTurn.h and SkeletonEyes.h in
+EACH sketch folder.
+Open the existing .ino files directly in Arduino IDE; do not paste just the .ino
+contents into a new empty sketch. Select Arduino Nano ESP32 for both uploads.
+The BLE and Preferences libraries come with the installed Arduino ESP32 board
+package. No extra radio, inter-skeleton wire, phone pairing or Wi-Fi setup is needed.
+
+Each skeleton keeps its existing MP3/button/power wiring. Skeleton 1 also keeps
+its PIR wiring. MP3 TX -> D3 and MP3 RX <- D4 are needed on BOTH Arduinos.
+Serial Monitor: 115200 baud. Send d to print the saved MP3 startup report.
+Both sketches also output an eye animation on D6 during their own playback.
+See SKELETON-EYES.txt for the LED-dependent transistor wiring and configuration.
+
+FILES
+
+Use the same short filenames on both cards, for example 00001.mp3, 00002.mp3,
+00003.mp3. Their audio contents can differ, and their storage/index order can
+differ. Put one copy of each filename in the card's root directory. Matching is
+case insensitive. MP3 and WAV names with a 1-8 character base and 3-character
+extension are supported. Use letters/digits/hyphens; leading _ and ._ names are
+reserved for metadata and skipped.
+
+Avoid long filenames for matching: the DY-SV5W reports FAT short aliases, which
+may differ between cards even if the long filename is the same. Renaming paired
+clips to numbered names such as 00001.mp3 avoids that problem. Restart the boards
+after changing the cards so counts and lookup caches refresh.
+
+FIRST TEST
+
+1. Put a different spoken message in 00001.mp3 on each card.
+2. Power both skeletons. Either power-up order works; discovery runs in the
+   background. Skeleton 2 advertises as Skeleton-2, and skeleton 1 finds the
+   custom service automatically.
+3. Look for "BLE: skeleton 2 connected." on skeleton 1 and
+   "BLE: skeleton 1 connected." on skeleton 2.
+4. Press skeleton 1's button. Its normal next-file selection still follows the
+   MP3 board's storage index order, so the first file might not be 00001.mp3.
+   Check "Filename reported after PLAY" to see which file it actually played.
+5. When that clip ends, skeleton 1 prints its matching-reply request. Skeleton 2
+   finds that filename and plays its own version. It reports finished afterward.
+6. Skeleton 1 then accepts another button/motion event. Its PIR still warms up
+   for 60 seconds after startup and can repeat while HIGH, taking turns with
+   skeleton 2 instead of overlapping the reply.
+
+BEHAVIOR
+
+Only a confirmed natural finish of skeleton 1's playback requests a reply.
+Pressing its button to skip a currently playing clip cancels that clip's reply.
+While waiting for skeleton 2, skeleton 1's button and PIR cannot start another
+local clip. Skeleton 2's button works normally when no remote reply is pending.
+If skeleton 2 is already playing a button-triggered clip, it finishes that clip
+before starting a queued remote reply. Its button cannot interrupt a remote reply.
+
+Skeleton 2 verifies filenames by selecting entries without playing them, then
+plays only an exact match. The first lookup may take a few seconds depending on
+where the file appears. A 16-entry cache accelerates later lookups, and cached
+indices are verified again before playback. Missing files, missing UART name
+replies, wrong selections and playback failures produce a failed acknowledgement;
+they do not intentionally substitute another clip. Metadata skipping remains on.
+
+If skeleton 2 receives the filename over BLE but prints an MP3 UART timeout,
+the failed step is a local query to its own MP3 board. Space-padded names such
+as "00005   MP3" are decoded as 00005.MP3, and letter case is ignored.
+Remote index/name queries allow 1000ms per attempt and up to three attempts.
+Retries repeat only the read query; they never restart playback. Timeout logs
+identify 0x0D (index) or 0x1E (filename), before/after PLAY, received byte count,
+and invalid frame count. Three unanswered attempts still fail the reply.
+Send d in SKELETON 2's Serial Monitor to inspect its saved startup report:
+the report from skeleton 1 cannot establish which commands board 2 supports.
+Startup probes still use their original 600ms limit. Zero received bytes on a
+runtime query means no bytes were read in that attempt; it does not alone prove
+the command is unsupported. Compare status/count/index/name responses and check
+MP3 TX -> D3 and common GND if return communication is missing throughout.
+
+Bluetooth requests carry a boot/session identifier, sequence number and filename.
+The receiver records accepted/completed requests in flash so a retry does not
+restart the same reply, including after a receiver reset. A reply interrupted by
+a reset is reported as failed on retry rather than replayed automatically.
+
+If skeleton 1 gets no acknowledgement for 30 seconds, or no completion within
+15 minutes after acknowledgement, it pauses its turn and prints a timeout.
+Check skeleton 2's power, Serial Monitor and UART wiring. Then press skeleton 1's
+button to retry THE SAME request. A completed request gets its cached response;
+it does not play twice. Receipt of a delayed finished/failed response also releases
+the wait. Skeleton 2's filename lookup has a five-minute limit.
+
+These constants live in SkeletonTurn.h (delivery/reply timeouts) and
+button_mp3.ino (REMOTE_LOOKUP_TIMEOUT_MS). Both copies of shared headers must
+stay identical. SERVICE_UUID in SkeletonBLE.h identifies this pair; use a new
+UUID in both copies if building another independent pair nearby.
+
+VALIDATION
+
+Both sketches compile with the installed arduino:esp32:nano_nora core.
+Host simulations check existing button/PIR/metadata behavior, exact filename
+matching with different index orders, natural finish versus interruption,
+acknowledgements, timeouts/retries, duplicates, missing files, cached lookups and
+receiver restart recovery. They mock Bluetooth/UART hardware; real radio range
+and operation with the two physical boards still require the first test above.
+
+Run simulations from this workspace:
+  python3 motion_mp3/tests/run_simulation.py
+  python3 button_mp3/tests/run_simulation.py
+  python3 tests/run_link_protocol.py
+
+The prior working sketches are saved in backups/before-bluetooth-2026-10-15.zip.
