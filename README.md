@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is the code and electronics to build two talking skeletons that take turns telling jokes with audio clips controlled over Bluetooth Low Energy (BLE), along with with flickering LED eyes. Each skeleton uses an Arduino Nano ESP32 controlling DY-SV5W MP3 module over UART.
+This is the code and electronics to build two talking skeletons that take turns telling jokes with audio clips controlled over Bluetooth Low Energy (BLE), along with flickering LED eyes. Each skeleton uses an Arduino Nano ESP32 controlling a DY-SV5W MP3 module over UART.
 
 Skeleton 1 starts a clip when its button is pressed or its infrared motion sensor detects activity. When the clip finishes, it sends the filename to skeleton 2, which plays its own recording with the same filename. Skeleton 1 waits for that reply to finish before accepting another trigger.
 
@@ -10,11 +10,18 @@ For example, `00001.mp3` can contain a joke setup on skeleton 1 and the punchlin
 
 I hope you have fun putting your own skeletons together! Mine are currently named Jerry Spinefeld and Nate Bonegatze, and they tell the worst skeleton dad jokes I could find. Props to the [Undertale community](https://steamcommunity.com/sharedfiles/filedetails/?id=537274165) for collecting so many groan-inducing jokes! 
 
+## Todo
+
+- [ ] Assembly in general. This is a work in progress!
+- [ ] I haven't yet worked out how to enclose and protect the speaker from rain while still making it loud enough, possibly with a plastic storage container. You might consider using the 1/8"(3.5mm) audio jack on the DY-SV5W mp3 board to connect to some audio setup, like a powered speaker with a 3.5mm input.
+- [ ] Water resistant seal on the skull. The skull you get might need some seal, like a rubber cord.
+- [ ] PIR sensor placement. This needs an unobstructed view to detect motion. Maybe cutting a hole in the skull for the sensor, or running wires out to the sensor placed somewhere else. [PIR FAQ at Panasonic](https://industry.panasonic.eu/products/components/sensors/passive-infrared-motion-sensors-papirs/passive-infrared-motion-sensors-faq)
+
 ## Disclaimer
 
-This was written and designed in conjunction with Codex GPT-6 Astra. While I am a software engineer, I haven't written C code since university, so ChatGPT wrote the C code. I'm also not an electrical engineer, so I relied on the interwebs, youtube, and ChatGPT (checking its work as well as I could). I have done some hobby robotics with Raspberry Pi 3, DFRobotics components, and RasPi Robot board using Python. Rasbperry Pi seemed like overkill for this skeleton project, so I went with an Arduino Nano ESP32 instead for more of an embedded approach.
+This was written and designed in conjunction with Codex GPT-6 Astra. While I am a software engineer, I haven't written C or C++ code since university, so ChatGPT wrote the C++ Arduino code. I'm also not an electrical engineer, so I relied on the interwebs, youtube, and ChatGPT (checking its work as well as I could). I have done some hobby robotics with Raspberry Pi 3, DFRobotics components, and RasPi Robot board using Python. Raspberry Pi seemed like overkill for this skeleton project, so I went with an Arduino Nano ESP32 instead for more of an embedded approach.
 
-The links in this document are not affiliate links, I don't make anything from you buying these parts. They're just examples, soure the parts however you prefer.
+The links in this document are not affiliate links, I don't make anything from you buying these parts. They're just examples, source the parts however you prefer.
 
 ## Tools
 
@@ -22,7 +29,7 @@ The links in this document are not affiliate links, I don't make anything from y
 - 99.3% tin/0.7% copper 0.8mm solder wire. If it has flux in it, it will be easier to use.
 - Flux pen if needed
 - See many videos out there on soldering. I'm pretty novice at it and got this project working, so you can too!
-- Wire strippers [Kobalt strippers at Lowes](https://www.amazon.com/K-balt-strippers-10-18-Solid-Stranded/dp/B0F9DTSVK9)
+- Wire strippers [Kobalt strippers at Lowes](https://www.lowes.com/pd/Kobalt-KBLT-Wire-Stripper-7-In/5001648909)
 - Small "precision" screwdrivers
 - [Hands free magnifier](https://www.amazon.com/Headband-Magnifier-Light%EF%BC%8CRechargeable%EF%BC%8CGlasses-Close-Lenses/dp/B0C3HK4ZQR) so you too can look silly. My eyes are aging and this is essential to read the text on the Nano and other electronics.
 
@@ -30,19 +37,41 @@ The links in this document are not affiliate links, I don't make anything from y
 
 For **each skeleton**:
 
-- Skeleton body: Home store skeletons. The ones I found had red LED eyes, an on/off switch, and no other electronics. They take 3x1.5v batteries and have an on-off switch. It was a lucky find that they are actually designed to hold more electronics, so there's plenty of room in the head for ths project.  The head comes open with a "few" screws and includes a place to mount a speaker, a movable jaw (once two screws were removed, it even has a lever arm which could be connected to a motor), and the LED eyes wired in. [5FT LED Pose-n-stay Skeleton at Home Depot](https://www.homedepot.com/p/Home-Accents-Holiday-5-FT-LED-Pose-N-Stay-Skeleton-5349-60272HD/205828003)
+- Skeleton body: Home store skeletons. 
+  - [5FT LED Pose-n-stay Skeleton at Home Depot](https://www.homedepot.com/p/Home-Accents-Holiday-5-FT-LED-Pose-N-Stay-Skeleton-5349-60272HD/205828003)
+  - The ones I found had red LED eyes, an on/off switch, and no other electronics. They take 3x1.5v batteries and have an on-off switch. It was a lucky find that they are actually designed to hold more electronics, so there's plenty of room in the head for this project. The head comes open with a "few" screws and includes a place to mount a speaker, a movable jaw (once two screws were removed, it even has a lever arm which could be connected to a motor), and the LED eyes wired in. 
 - `Arduino Nano ESP32`. [Nano on Amazon](https://www.amazon.com/gp/product/B0C947BHK5)
-- Power source. This can be a 5V 2A **charger cable**. I wouldn't use a modern phone charger as those can deliver a lot more amps, and I don't know that a Nano can negotiate the power delivery.  *Or* you could use a **small USB power bank**, like for hand warmers or phones. Must be 5V and about 2A output. Some hand warmer systems have a higher voltage which would not work. [Canbory power bank on Amazon](https://www.amazon.com/gp/product/B0F436NDV9) Note: when I ordered these, one came and was bulging, so I got a replacement from the seller and recycled the damaged one.
-- `DY-SV5W MP3` module configured for UART serial control. 1-OFF, 2-OFF, 3-ON [DY-SV5W MP3 on Amazon](https://www.amazon.com/gp/product/B0B1LDKYMK)
+- Power source. 
+  - This can be a 5V 2A **charger**. [Arduino docs on power supply](https://support.arduino.cc/hc/en-us/articles/360018922259-What-power-supply-can-I-use-with-my-Arduino-board)  
+  > Using a power supply with a higher current capacity (e.g., a 2A supply for a 1A project) is perfectly safe; the board will only “draw” what it needs.
+  - *Or* you could use a **small USB power bank**, like for hand warmers or phones. Must be 5V and about 2A output. Some hand warmer systems have a higher voltage which would not work. [Canbory power bank on Amazon](https://www.amazon.com/gp/product/B0F436NDV9) 
+  - *Note: when I received the Canbory power banks one was bulging, so I got a replacement from the seller and recycled the damaged one.*
+- `DY-SV5W MP3` module configured for UART serial control: DIP switches `1-OFF, 2-OFF, 3-ON`
+  - [DY-SV5W MP3 on Amazon](https://www.amazon.com/gp/product/B0B1LDKYMK)
+  - [Manual](https://www.digitaltown.co.uk/images/components/DYSV5W/DY-SV5W%20Voice%20Playback%20ModuleDatasheet.pdf)
+  - [Reference project](https://www.digitaltown.co.uk/components18DYSV5W.php). 
+  - Solder the header pins to this. You don't have to solder all of them, but you might as well in case you expand the project or reuse the board later. Add pins to at least the 5V+, 5V-, TX, RX, GND, SPK+, SPK-.
+  - Adjust the volume on the board (with a screwdriver on the blue box/potentiometer). The board also has software volume control, and the code sets that to maximum.
 - Header pin breakaway headers. [20 Pcs 2.54mm 0.1in headers](https://www.amazon.com/gp/product/B0FRZW75VS)
-- Compatible microSD card containing the audio clips. 32GB or less is all the DY-SV5W can handle. There are a lot of fake or bad SD cards out there, check [Matt Cole's database of cards](https://www.bahjeez.com/the-great-microsd-card-survey/).
+- Compatible microSD card containing the audio clips. 
+  - 32GB or less is all the DY-SV5W can handle. 
+  - Format the sd card to FAT32. This erases the card! When using a mac this is labeled "MS-DOS(FAT)".
+  - There are a lot of fake or bad SD cards out there, check [Matt Cole's database of cards](https://www.bahjeez.com/the-great-microsd-card-survey/).
 - Speaker connected to the MP3 module's speaker terminals. My build uses a 4Ω, 3W speaker; choose volume to suit the speaker. [Gikfun 2" speaker](https://www.amazon.com/gp/product/B01CHYIU26)
 - Momentary push button. [Tactile switches on Digikey](https://www.digikey.com/en/products/detail/te-connectivity-alcoswitch-switches/1825910-6/1632536)
 - Two bare LED eyes. This build retains their existing parallel wiring and uses one shared 1 kΩ resistor at low current. In my case they came from the Home Depot skeleton.
 - Breadboard. [Chanzon 6pc mini breadboard](https://www.amazon.com/gp/product/B07LF71ZTS) These don't have very tight connections, I'll try something else next project.
 - Breadboard jumper wires. [360 piece jumper wires kit](https://www.amazon.com/360-Pc-Multicolor-Breadboard-Jumper-Wires/dp/B089FZ79CS) There are smaller kits out there, this is just to show the type of push-on wires that are great for prototyping. 8 and 4 inch, different combinations of ends.
+- 1 kΩ resistor per skeleton
+- [optional] heat-shrink tubing
+- USB data cables that work for your setup, like USB A <-> USB C or USB C <-> USB C
 
-Skeleton 1 also uses an **HC-SR501 PIR motion sensor**. [HC-SR-501 on digikey](https://www.digikey.com/en/products/detail/sunfounder/ST0012/22116811) If your model has a jumper, set it to H (high), mine is hard wired to H (tiny trace wire from center pad to H pad).
+Skeleton 1 also uses an **HC-SR501 PIR motion sensor**. 
+  - [HC-SR-501 on digikey](https://www.digikey.com/en/products/detail/sunfounder/ST0012/22116811)
+  - [Sunfounder docs](https://docs.sunfounder.com/projects/umsk/en/latest/01_components_basic/12-component_pir_motion.html) 
+  - If your model has a jumper, set it to H retriggerable operation.
+  - Adjust Sx for detection range
+  - Adjust Tx to its shortest hold time. The sketch controls playback timing and waits for the other skeleton’s reply.
 
 Skeleton 2 has no PIR sensor. The Nano's built-in BLE radio handles communication; no additional radio or cable between skeletons is required.
 
@@ -103,8 +132,8 @@ Skeleton 1 card       Skeleton 2 card
 ```
 
 - Place one copy of each file in the card's root directory.
-- Use a 1–8 character base name and an `.mp3`. Numbered names are simplest; matching ignores case.
-- Avoid long filenames: the player reports FAT short aliases, which can differ between cards.
+- Use a 1–8 character base name containing letters, digits, or hyphens, followed by .mp3. Numbered names such as 00001.mp3 are recommended.
+- Avoid long filenames: the player reports FAT short aliases, which can differ between cards. 
 - Reserve leading `_` and `._` names for metadata. The sketches skip recognized metadata entries, including macOS sidecars, when filename queries succeed. `dot_clean` utility is your friend if you're loading the cards on a mac because the metadata files can cause problems on the mp3 board.  The code attempts to ignore them.
 - The MP3 module supplies the file count. Adding clips does not require editing a filename list in the sketch, it should adapt to however many files you put on there, within reason.  
 - Local playback follows the module's storage index order, which may differ from alphabetical order. The two cards do not need the same index order.
@@ -114,7 +143,7 @@ The player's reported entry count can include metadata files. Bluetooth replies 
 
 ## Upload and first run
 
-Note: I was unable to upload when both boards were connected. For debugging you can have both connected and see their serial port output. You may need to set `Tools > Programmer > Esptool`.
+Note: I was unable to upload when both boards were connected. For debugging you can have both connected and see their serial port output. If you have trouble with upload, you may need to use the recovery procedure. `Tools > Programmer > Esptool` then `Sketch → Upload Using Programmer` [Arduino recovery instructions](https://support.arduino.cc/hc/en-us/articles/9810414060188-Reset-the-Arduino-bootloader-on-the-Nano-ESP32)
 
 1. Install the **Arduino ESP32 Boards** package in Arduino IDE and select **Arduino Nano ESP32**. The classic AVR Nano board selection will not compile these sketches.
 2. Open [motion_mp3/motion_mp3.ino](motion_mp3/motion_mp3.ino) and upload it to **skeleton 1**.
@@ -150,11 +179,11 @@ See [the Bluetooth notes](SKELETON-BLUETOOTH.txt) for acknowledgement handling, 
 
 ```bash
 # Measure and, if needed, create 00001-louder.mp3 beside the input.
-bash normalize-audio.sh "00001.mp3"
+bash scripts/normalize-audio.sh "00001.mp3"
 
 # Preserve a matching short filename in an existing output directory.
 mkdir -p normalized
-bash normalize-audio.sh "00001.mp3" "normalized/00001.mp3"
+bash scripts/normalize-audio.sh "00001.mp3" "normalized/00001.mp3"
 ```
 
 The default target is **−16 LUFS**, with processing below −16.5 LUFS and a **−1.5 dBTP** limiter ceiling before encoding. Output is stereo, 44.1 kHz, 192 kbps MP3. The script measures the encoded result before saving and never overwrites the original or an existing destination. Already-loud-enough, silent, or unmeasurable files produce no new file.
@@ -220,6 +249,6 @@ arduino-cli compile --fqbn arduino:esp32:nano_nora button_mp3
 | [motion_mp3/](motion_mp3/) | Skeleton 1: PIR, button, MP3 playback, BLE client, and eyes |
 | [button_mp3/](button_mp3/) | Skeleton 2: button, matching replies, BLE server, and eyes |
 | [tests/](tests/) | Shared simulation support and protocol checks |
-| [normalize-audio.sh](normalize-audio.sh) | Measure and increase quiet audio recordings |
+| [scripts/normalize-audio.sh](scripts/normalize-audio.sh) | Measure and increase quiet audio recordings |
 | [SKELETON-BLUETOOTH.txt](SKELETON-BLUETOOTH.txt) | Detailed pairing, filename matching, and recovery notes |
 | [SKELETON-EYES.txt](SKELETON-EYES.txt) | LED wiring options and component notes |
